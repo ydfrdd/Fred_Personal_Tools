@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DPWH Reference Search</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f1117;--surface:#181c27;--surface2:#1e2333;--border:#2a3050;--accent:#4f8ef7;--accent2:#2dd4a0;--accent3:#f7c04f;--text:#e2e8f0;--muted:#64748b;--sel-bg:#1a2a4a;--sel-bdr:#4f8ef7;--row-hover:#1e2a3a;--row-even:#161a26}
+body{font-family:"IBM Plex Sans",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:32px 16px}
+.container{width:100%;max-width:960px}
+header{margin-bottom:24px}
+.title{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+h1{font-size:22px;font-weight:600}
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.tab{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:9px 20px;border:1px solid transparent;border-bottom:none;border-radius:6px 6px 0 0;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s;position:relative;bottom:-1px}
+.tab:hover{color:var(--text);border-color:var(--border)}
+.tab.active{color:var(--accent);background:var(--surface);border-color:var(--border);border-bottom-color:var(--surface)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+.search-wrap{position:relative;margin-bottom:8px}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none}
+.search-input{width:100%;padding:13px 14px 13px 40px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:"IBM Plex Sans",sans-serif;font-size:14px;outline:none;transition:border-color .15s}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:var(--muted)}
+.kb-hint{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted);margin:4px 0 10px;letter-spacing:.04em}
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px}
+.count-info{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted)}
+.count-info span{color:var(--accent2);font-weight:600}
+.btn-group{display:flex;gap:8px}
+button{font-family:"IBM Plex Sans",sans-serif;font-size:12px;font-weight:500;padding:7px 14px;border-radius:6px;border:1px solid var(--border);cursor:pointer;transition:all .15s}
+.btn-ghost{background:transparent;color:var(--muted)}.btn-ghost:hover{border-color:var(--muted);color:var(--text)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}.btn-primary:hover{background:#3a7af0}
+.btn-danger{background:transparent;color:#f87171;border-color:#f87171}.btn-danger:hover{background:#f871711a}
+.list-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:20px;max-height:360px;overflow-y:auto}
+.list-wrap::-webkit-scrollbar{width:5px}.list-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.category-row{padding:6px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent3)}
+.item{display:flex;align-items:flex-start;gap:12px;padding:9px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;user-select:none}
+.item:last-child{border-bottom:none}
+.item:hover{background:var(--surface2)}
+.item.selected{background:var(--sel-bg);border-left:2px solid var(--sel-bdr);padding-left:14px}
+.item.active-row{outline:1px solid var(--accent);outline-offset:-1px;background:var(--surface2)}
+.item.active-row.selected{outline-color:var(--accent2);background:var(--sel-bg)}
+.chk{width:16px;height:16px;border:1.5px solid var(--border);border-radius:4px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;transition:all .1s}
+.selected .chk{background:var(--accent);border-color:var(--accent)}
+.chk::after{content:"";display:none;width:9px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) translateY(-1px)}
+.selected .chk::after{display:block}
+.item-text{flex:1;min-width:0}
+.item-name{font-size:13px;font-weight:500;color:var(--text);line-height:1.4}
+.item-name mark{background:rgba(79,142,247,.25);color:var(--accent);border-radius:2px;padding:0 1px}
+.item-sub{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted);margin-top:2px}
+.item-code{color:var(--accent2)}
+.item-unit{color:var(--accent3)}
+.no-results{padding:40px;text-align:center;color:var(--muted);font-size:13px}
+.sheet-panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.sheet-panel.visible{display:block}
+.sheet-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.sheet-title{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent2)}
+.sheet-actions{display:flex;gap:8px}
+.sheet-scroll{overflow-x:auto;max-height:240px;overflow-y:auto;user-select:none}
+.sheet-scroll::-webkit-scrollbar{width:5px;height:5px}.sheet-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.stbl{width:100%;border-collapse:collapse;font-size:12px}
+.stbl thead{position:sticky;top:0;z-index:1}
+.stbl thead tr{background:var(--surface2);border-bottom:1px solid var(--border)}
+.stbl th{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;color:var(--muted);font-weight:500;padding:7px 12px;text-align:left}
+.stbl th:first-child{width:36px;text-align:center}
+.stbl th.w-code{width:110px}.stbl th.w-unit{width:70px}.stbl th.w-del{width:32px}
+.stbl tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+.stbl tbody tr:last-child{border-bottom:none}
+.stbl tbody tr:nth-child(even){background:var(--row-even)}
+.stbl tbody tr:hover{background:var(--row-hover)}
+.stbl td{padding:8px 12px;color:var(--text);font-size:12px;line-height:1.4}
+.stbl td:first-child{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted);text-align:center}
+.stbl td.td-code{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--accent2)}
+.stbl td.td-unit{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--accent3)}
+.stbl td:last-child{text-align:center}
+.row-del{cursor:pointer;color:var(--muted);font-size:15px;background:none;border:none;padding:0 2px;transition:color .1s;line-height:1}
+.row-del:hover{color:#f87171}
+.sheet-footer{padding:9px 16px;border-top:1px solid var(--border);background:var(--surface2)}
+.footer-hint{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--accent2);color:#0f1117;font-size:13px;font-weight:600;padding:10px 22px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;font-family:"IBM Plex Mono",monospace}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="title">DPWH Reference Search</div>
+    <h1>Material &amp; Equipment Finder</h1>
+  </header>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('eq')">Equipment</button>
+    <button class="tab" onclick="switchTab('mat')">Materials</button>
+  </div>
+
+  <!-- EQUIPMENT TAB -->
+  <div class="tab-panel active" id="tab-eq">
+    <div class="search-wrap"><span class="search-icon">⌕</span><input type="text" class="search-input" id="eq-search" placeholder="Search equipment…" autocomplete="off"></div>
+    <div class="kb-hint">↑↓ navigate &nbsp;·&nbsp; Enter to add &nbsp;·&nbsp; Esc to clear</div>
+    <div class="toolbar">
+      <div class="count-info">Showing <span id="eq-show">0</span> of <span id="eq-total">0</span> &nbsp;·&nbsp; <span id="eq-sel">0</span> selected</div>
+      <div class="btn-group"><button class="btn-ghost" onclick="selAll('eq')">Select All</button><button class="btn-ghost" onclick="clrAll('eq')">Clear</button></div>
+    </div>
+    <div class="list-wrap" id="eq-list"></div>
+    <div class="sheet-panel" id="eq-panel">
+      <div class="sheet-header">
+        <div class="sheet-title">Selected — <span id="eq-sel2">0</span> item(s)</div>
+        <div class="sheet-actions"><button class="btn-danger" onclick="clrAll('eq')">Clear All</button><button class="btn-primary" onclick="doCopy('eq')">Copy to Clipboard</button></div>
+      </div>
+      <div class="sheet-scroll"><table class="stbl"><thead><tr><th>#</th><th>FULL DESCRIPTION</th><th class="w-del"></th></tr></thead><tbody id="eq-body"></tbody></table></div>
+      <div class="sheet-footer"><div class="footer-hint">↳ Paste into Excel — one row per item</div></div>
+    </div>
+    <textarea id="eq-ta" readonly aria-hidden="true" tabindex="-1" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none"></textarea>
+  </div>
+
+  <!-- MATERIALS TAB -->
+  <div class="tab-panel" id="tab-mat">
+    <div class="search-wrap"><span class="search-icon">⌕</span><input type="text" class="search-input" id="mat-search" placeholder="Search by description, code, or category…" autocomplete="off"></div>
+    <div class="kb-hint">↑↓ navigate &nbsp;·&nbsp; Enter to add &nbsp;·&nbsp; Esc to clear</div>
+    <div class="toolbar">
+      <div class="count-info">Showing <span id="mat-show">0</span> of <span id="mat-total">0</span> &nbsp;·&nbsp; <span id="mat-sel">0</span> selected</div>
+      <div class="btn-group"><button class="btn-ghost" onclick="selAll('mat')">Select All</button><button class="btn-ghost" onclick="clrAll('mat')">Clear</button></div>
+    </div>
+    <div class="list-wrap" id="mat-list"></div>
+    <div class="sheet-panel" id="mat-panel">
+      <div class="sheet-header">
+        <div class="sheet-title">Selected — <span id="mat-sel2">0</span> item(s)</div>
+        <div class="sheet-actions"><button class="btn-danger" onclick="clrAll('mat')">Clear All</button><button class="btn-primary" onclick="doCopy('mat')">Copy to Clipboard</button></div>
+      </div>
+      <div class="sheet-scroll"><table class="stbl"><thead><tr><th>#</th><th>DESCRIPTION</th><th class="w-unit">UNIT</th><th class="w-del"></th></tr></thead><tbody id="mat-body"></tbody></table></div>
+      <div class="sheet-footer"><div class="footer-hint">↳ Paste into Excel — description and unit in separate columns</div></div>
+    </div>
+    <textarea id="mat-ta" readonly aria-hidden="true" tabindex="-1" style="position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;pointer-events:none"></textarea>
+  </div>
+</div>
+<div class="toast" id="toast">Copied! Paste into Excel ✓</div>
+<script>
+// ── EQUIPMENT DATA ──────────────────────────────────────────────
+const EQ_RAW = ["Bulldozer,DX175","Bulldozer with Ripper,DX175","Payloader,LX80-2C,1.5 cu.m./1.95 cu.yd","Motorized Road Grader,G710B","Motorized Road Grader with Scarifier,G710B","Pneumatic Tire Roller,9-WHL 9.00X20 4PR,10mt","Vibratory Roller,SD100DC,10mt","Tandem Steel Roller,HD110,11mt","Plate Compactor,400-500 Gasoline Engine","Crawler Crane,All Models,6-10 mt","Crawler Crane,All Models,21-25 mt","Crawler Crane,All Models,36-40 mt","Crawler Crane with Bucket,All Models,36-40 mt","Crawler Crane,All Models,41-45 mt","Crawler Crane,All Models,51-60 mt","Crawler Crane,All Models,61-70 mt","Crawler Crane,All Models,71-80 mt","Truck Mounted Crane,All Models,6-10 mt","Truck Mounted Crane,All Models,21-25 mt","Truck Mounted Crane,All Models,31-35 mt","Truck Mounted Crane,All Models,41-45mt","Truck Mounted Crane w/ Bucket,All Models,41-45 mt","Truck Mounted Crane,All Models,51-60mt","Truck Mounted Crane Hydraulic Telescopic Boom,All Models,2-5 mt","Topless Tower Crane,MDT 98-1.2M,55M x 6T/1.2T","Topless Tower Crane,MDT 128,55M x 6T/1.6T","Topless Tower Crane,MDT 132 G8,55M x 8T/1.6T","Topless Tower Crane,MDT 162 H8,60M x 8t/1.8T","Topless Tower Crane,MDT 178,55M x 6T/1.6T","Topless Tower Crane,MDT 192-H12,55M x 8T/1.6T","Aerial Lift Self Propelled Scissor Lift,GS4080 Gas/Diesel Driven,40ft hts x 46 ft Range","Straight Boom Lift Telescopic Gas/Diesel,1000 lb x 60ft ht x 66ft range","Backhoe,HD820 III,0.8 cu.m./1.04 cu.yd","Backhoe with breaker,HD820 III,0.8 cu.m./1.04 cu.yd","Backhoe Wheel Mounted,PW60N-1,0.28 cu.m./0.37 cu.yd","Diesel Hammer,K25-DSL,7500 kg m","Vibro Hammer,VIBRO FONCEUR PTC25H1A,45000 kg m","Vibro Hammer,MHF12 w/ Hyd. Power Jack,120 kN m","Vibro Hammer,DPD600T Hydraulic Pile River,60 ton","Drilling Rig,CMV TH18/65,200mm dia. 65m depth 18000 kg-m Drill Torque","Asphalt Distributor,ROSCO/5 ton,3000 USG","Asphalt Paver,NF220BIIVDM","Cold Milling Machine,W130F,milling width 1300mm max depth 300mm","Cold Milling Machine,W100 TCD 2012 L06 2V,milling width 1 meter max depth 300mm","Concrete Paver,COMMANDER III FOUR TRACK","Concrete Screeder,Wacker Truss Screed","One Bagger Mixer","Transit Mixer,All Models,5 cu. Ft./min","Concrete Pump,Diesel Driven Trailer Mounted Less Pipe,100 cu. Ft./min","Grouting Machine,GARNER DENVER 6X3X6 AIR DRIVEN","Dump Truck,All Models,12 cu.yd.","Cargo/Service Truck,All Models,2-5 mt","Boom Truck,NXG1160D3ZAL1X","Cargo/Service Truck,All Models,9-10mt","Water Truck/Pump,All Models,16000L","Air Compressor,All Models,15-35 cfm","Air Compressor,All Models,126-160 cfm","Air Compressor,All Models,161-185 cfm","Air Compressor,All Models,356-450 cfm","Diamond Drill,CP-8","Diamond Drill,CP-55A","Jackhammer","Pneumatic Drilling Machine","Water Pump 100 mm Suction,1800","Water Pump 100 mm Suction,2667,50","Generator Set,All Makes,5 kW","Generator Set,All Makes,40 kW","Generator Set,All Makes,300 kW","Generator Set,All Makes,700 kW","Generator Set,All Makes,900 kW","Welding Machine,Gas/Diesel Driven,300","Welding Machine,Gas/Diesel Driven,500","Welding Machine,Electric Driven/DC Output,500","Portable Breaker,WACKER PORTABLE PETROL BREAKER BHF30S","Chainsaw,HUSQVARNA 2100 CD with CR22,7ft Reach 9 in Standard Blade","Concrete Vibrator,Flexible Shaft Type 2in Head dia,5 Amperes Gasoline Drive Unit","Concrete Saw Blade 14in dia 7.5 Hp,14in Blade dia with 4 3/4in Cutting Depth","Bar Cutter Single Phase,25mm Maximum Rebar Dia.(Grade 40) Single Phase","Bar Bender,25mm Maximum Rebar Dia. Three Phase","Tower Lights,Tower Height = 28ft,No. of Lights = 4 x 1000 watts Generator = 5kW","Joint Sealer Machine,Gas or Diesel Driven w/ Hot or Cold Spray Nozzle","Concrete Batch Plant,Complete with Cement silo and screw conveyor system","Power Broom,Towed Type with Engine 2m wide,6-30km/h sweeping capacity","Applicator Machine,CK 380,100kg","Asphalt Kettle/Drum,25 gal","Chainblock with belt,1 mt","Chipping Hammer,H41SD,1050W","Electro-Fusion Grinding Machine,PPFE315,3.5KW","Grinding Machine w/ Accessories,M0900,220-240V 2.5A Angle Grinder","Ground Penetrating Radar GPR rebar scanner,Conquest 100 Enhanced Version","Grout Mixer,SDR1400,1400W","Hammer Drilling Machine,PR38E,1050W 38mm","Hydraulic Jack,5mt","Jackhammer,HM1801,2000W","Kneading Machine,YD300,300kg/cylinder Hydraulic Double-Cylinder","Wood/Steel Ladder,Fiberglass Expandable","Cutter Suction Dredger,12in Dia.,500hp with 1km discharge pipe and floaters","Cutter Suction Dredger,20in Dia.,1835hp with 1km discharge pipe and floaters","Multi-Purpose Amphibious Dredger,8in Dia.,255hp with 0.3km discharge pipe and floaters","Multi-Purpose Amphibious Dredger,10in Dia.,275hp with 0.3km discharge pipe and floaters","Multi-Purpose Amphibious Dredger,30in Dia.,1575hp with 1km discharge pipe and floaters","Scow Barge,30 cu.m.","Scow Barge,150 cu.m.","Low Bed Trailer,Fruehauf Des-021A20,20 mt"];
+
+// ── MATERIALS DATA ──────────────────────────────────────────────
+const MAT_RAW = [
+  {code:"MG01.0001",desc:"Common Borrow",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG01.0002",desc:"Selected Borrow",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG01.0003",desc:"Aggregate Subbase Course",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG01.0004",desc:"Aggregate Base Course",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG01.0005",desc:"Aggregate Base Course (crushed)",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG01.0008",desc:"Fine Aggregate (sand)",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG01.0009",desc:"Gravel, 3/4\" (mas 20 Mm)",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG01.0010",desc:"Gravel, G1 (mas 40 Mm)",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG01.0012",desc:"Stone, class A (15 - 25 kg)",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG01.0013",desc:"Stone, class B (30 - 70 kg)",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG01.0014",desc:"Stone, class C (60 - 100 kg)",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG01.0015",desc:"Stone, class D (100 - 200 kg)",unit:"CUM",cat:"Aggregate and Earth Material"},
+  {code:"MG02.0006",desc:"Asphalt Concrete, Hot-Laid (plant Mix)",unit:"MTON",cat:"Bituminous Material"},
+  {code:"MG03.0002",desc:"Portland Cement (40 kg)",unit:"BAG",cat:"Cement"},
+  {code:"MG04.0001",desc:"CHB Load Bearing (4\" x 8\" x 16\")",unit:"PC",cat:"Concrete Hollow Block"},
+  {code:"MG04.0002",desc:"CHB Load Bearing (6\" x 8\" x 16\")",unit:"PC",cat:"Concrete Hollow Block"},
+  {code:"MG04.0003",desc:"CHB Ordinary (4\" x 8\" x 16\")",unit:"PC",cat:"Concrete Hollow Block"},
+  {code:"MG04.0004",desc:"CHB Ordinary (6\" x 8\" x 16\")",unit:"PC",cat:"Concrete Hollow Block"},
+  {code:"MG05.0002",desc:"Concrete Epoxy (part A & B Set)",unit:"GAL",cat:"Chemical"},
+  {code:"MG05.0003",desc:"Concrete Neutralizer",unit:"LTR",cat:"Chemical"},
+  {code:"MG05.0004",desc:"Curing Compound",unit:"LTR",cat:"Chemical"},
+  {code:"MG05.0012",desc:"Grease",unit:"LTR",cat:"Chemical"},
+  {code:"MG06.0001",desc:"Common Wire Nail, Assorted",unit:"KG",cat:"Form"},
+  {code:"MG06.0002",desc:"Concrete Nail, Assorted",unit:"KG",cat:"Form"},
+  {code:"MG06.0003",desc:"Coco Lumber",unit:"BDFT",cat:"Form"},
+  {code:"MG06.0004",desc:"Good Lumber",unit:"BDFT",cat:"Form"},
+  {code:"MG06.0006",desc:"Marine Plywood (1/4\" x 4\' x 8\')",unit:"PC",cat:"Form"},
+  {code:"MG06.0007",desc:"Marine Plywood (1/2\" x 4\' x 8\')",unit:"PC",cat:"Form"},
+  {code:"MG06.0008",desc:"Marine Plywood (3/4\" x 4\' x 8\')",unit:"PC",cat:"Form"},
+  {code:"MG06.0009",desc:"Ordinary Plywood (1/4\" x 4\' x 8\')",unit:"PC",cat:"Form"},
+  {code:"MG06.0010",desc:"Ordinary Plywood (1/2\" x 4\' x 8\')",unit:"PC",cat:"Form"},
+  {code:"MG06.0011",desc:"Ordinary Plywood (3/4\" x 4\' x 8\')",unit:"PC",cat:"Form"},
+  {code:"MG06.0018",desc:"Phenolic Board, (1/2\" x 4\' x 8\')",unit:"PC",cat:"Form"},
+  {code:"MG06.0019",desc:"Phenolic Board, (3/4\" x 4\' x 8\')",unit:"PC",cat:"Form"},
+  {code:"MG06.0012",desc:"Steel Form, Rental (150 mm Width)",unit:"M",cat:"Form"},
+  {code:"MG06.0013",desc:"Steel Form, Rental (200 mm Width)",unit:"M",cat:"Form"},
+  {code:"MG06.0014",desc:"Steel Form, Rental (230 mm Width)",unit:"M",cat:"Form"},
+  {code:"MG06.0015",desc:"Steel Form, Rental (250 mm Width)",unit:"M",cat:"Form"},
+  {code:"MG06.0016",desc:"Steel Form, Rental (280 mm Width)",unit:"M",cat:"Form"},
+  {code:"MG06.0017",desc:"Steel Form, Rental (300 mm Width)",unit:"M",cat:"Form"},
+  {code:"MG07.0001",desc:"Epoxy Primer with Catalyst (set)",unit:"GAL",cat:"Paint"},
+  {code:"MG07.0002",desc:"Red Oxide Metal Primer",unit:"GAL",cat:"Paint"},
+  {code:"MG07.0003",desc:"Solvent-Based Primer",unit:"GAL",cat:"Paint"},
+  {code:"MG07.0004",desc:"Tinting Color",unit:"LTR",cat:"Paint"},
+  {code:"MG07.0005",desc:"Aluminum Paint",unit:"GAL",cat:"Paint"},
+  {code:"MG07.0006",desc:"Latex Paint, Gloss",unit:"GAL",cat:"Paint"},
+  {code:"MG07.0007",desc:"Latex Paint, Semi-Gloss",unit:"GAL",cat:"Paint"},
+  {code:"MG07.0008",desc:"Quick-Drying Enamel Paint",unit:"GAL",cat:"Paint"},
+  {code:"MG07.0009",desc:"Lacquer Thinner",unit:"GAL",cat:"Paint"},
+  {code:"MG07.0010",desc:"Paint Thinner",unit:"GAL",cat:"Paint"},
+  {code:"MG08.0001",desc:"GI Pipe, Schedule 40 (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0002",desc:"GI Pipe, Schedule 40 (3/4\" | 19 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0003",desc:"GI Pipe, Schedule 40 (1\" | 25.4 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0004",desc:"GI Pipe, Schedule 40 (1 1/2\" | 38 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0005",desc:"GI Pipe, Schedule 40 (2\" | 50 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0007",desc:"GI Pipe, Schedule 40 (3\" | 76 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0009",desc:"GI Pipe, Schedule 40 (4\" | 101 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0010",desc:"GI Pipe, Schedule 40 (5\" | 127 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0011",desc:"GI Pipe, Schedule 40 (6\" | 152.4 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0012",desc:"PVC Pipe (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0013",desc:"PVC Pipe (3/4\" | 19 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0014",desc:"PVC Pipe (1\" | 25.4 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0015",desc:"PVC Pipe (1 1/2\" | 38 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0016",desc:"PVC Pipe (2\" | 50 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0018",desc:"PVC Pipe (3\" | 76 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0020",desc:"PVC Pipe (4\" | 101 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0039",desc:"BI Pipe, Schedule 40 (1\" | 25.4 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0040",desc:"BI Pipe, Schedule 40 (1 1/2\" | 38 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0041",desc:"BI Pipe, Schedule 40 (2\" | 50 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0042",desc:"BI Pipe, Schedule 40 (4\" | 101 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0021",desc:"Reinforced Concrete Pipe, class II (12\" | 300 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0022",desc:"Reinforced Concrete Pipe, class II (18\" | 460 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0023",desc:"Reinforced Concrete Pipe, class II (24\" | 610 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0024",desc:"Reinforced Concrete Pipe, class II (30\" | 760 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0025",desc:"Reinforced Concrete Pipe, class II (36\" | 910 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0026",desc:"Reinforced Concrete Pipe, class II (42\" | 1070 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0027",desc:"Reinforced Concrete Pipe, class II (48\" | 1220 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0028",desc:"Reinforced Concrete Pipe, class II (54\" | 1370 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0029",desc:"Reinforced Concrete Pipe, class II (60\" | 1524 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0030",desc:"Reinforced Concrete Pipe, class IV (12\" | 300 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0031",desc:"Reinforced Concrete Pipe, class IV (18\" | 460 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0032",desc:"Reinforced Concrete Pipe, class IV (24\" | 610 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0033",desc:"Reinforced Concrete Pipe, class IV (30\" | 760 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0034",desc:"Reinforced Concrete Pipe, class IV (36\" | 910 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0035",desc:"Reinforced Concrete Pipe, class IV (42\" | 1070 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0036",desc:"Reinforced Concrete Pipe, class IV (48\" | 1220 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0037",desc:"Reinforced Concrete Pipe, class IV (54\" | 1370 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG08.0038",desc:"Reinforced Concrete Pipe, class IV (60\" | 1524 mm Ø)",unit:"PC",cat:"Pipe"},
+  {code:"MG09.0001",desc:"Ready-Mix Concrete, 3000 PSI @ 28 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG09.0002",desc:"Ready-Mix Concrete, 3000 PSI @ 14 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG09.0003",desc:"Ready-Mix Concrete, 3000 PSI @ 7 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG09.0004",desc:"Ready-Mix Concrete, 3000 PSI @ 3 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG09.0005",desc:"Ready-Mix Concrete, 3500 PSI @ 28 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG09.0006",desc:"Ready-Mix Concrete, 3500 PSI @ 14 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG09.0007",desc:"Ready-Mix Concrete, 3500 PSI @ 7 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG09.0008",desc:"Ready-Mix Concrete, 3500 PSI @ 3 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG09.0009",desc:"Ready-Mix Concrete, 4000 PSI @ 28 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG09.0010",desc:"Ready-Mix Concrete, 4000 PSI @ 14 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG09.0011",desc:"Ready-Mix Concrete, 4500 PSI @ 28 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG09.0012",desc:"Ready-Mix Concrete, 5000 PSI @ 28 Days",unit:"CUM",cat:"Ready-Mix Concrete"},
+  {code:"MG10.0001",desc:"Reinforcing Steel Bar (grade 40)",unit:"KG",cat:"Structural Steel"},
+  {code:"MG10.0002",desc:"Reinforcing Steel Bar (grade 60)",unit:"KG",cat:"Structural Steel"},
+  {code:"MG10.0003",desc:"GI Tie Wire #16",unit:"KG",cat:"Structural Steel"},
+  {code:"MG10.0004",desc:"Angular Bar (a36)",unit:"KG",cat:"Structural Steel"},
+  {code:"MG10.0005",desc:"Channel Bar (a36)",unit:"KG",cat:"Structural Steel"},
+  {code:"MG10.0022",desc:"Flat Bar (a36)",unit:"KG",cat:"Structural Steel"},
+  {code:"MG10.0006",desc:"Square Bar (a36)",unit:"KG",cat:"Structural Steel"},
+  {code:"MG10.0007",desc:"I-Beam (a36)",unit:"KG",cat:"Structural Steel"},
+  {code:"MG10.0008",desc:"Wide Flange (a36)",unit:"KG",cat:"Structural Steel"},
+  {code:"MG10.0009",desc:"Milled Steel Plate, Plain (a36)",unit:"KG",cat:"Structural Steel"},
+  {code:"MG10.0010",desc:"Steel Casing (10 mm thk, 600 mm Ø)",unit:"M",cat:"Structural Steel"},
+  {code:"MG10.0011",desc:"Steel Casing (10 mm thk, 700 mm Ø)",unit:"M",cat:"Structural Steel"},
+  {code:"MG10.0012",desc:"Steel Casing (10 mm thk, 800 mm Ø)",unit:"M",cat:"Structural Steel"},
+  {code:"MG10.0013",desc:"Steel Casing (10 mm thk, 900 mm Ø)",unit:"M",cat:"Structural Steel"},
+  {code:"MG10.0014",desc:"Steel Casing (10 mm thk, 1000 mm Ø)",unit:"M",cat:"Structural Steel"},
+  {code:"MG10.0015",desc:"Steel Casing (10 mm thk, 1100 mm Ø)",unit:"M",cat:"Structural Steel"},
+  {code:"MG10.0016",desc:"Steel Casing (10 mm thk, 1200 mm Ø)",unit:"M",cat:"Structural Steel"},
+  {code:"MG10.0017",desc:"Steel Casing (10 mm thk, 1300 mm Ø)",unit:"M",cat:"Structural Steel"},
+  {code:"MG10.0018",desc:"Steel Casing (10 mm thk, 1400 mm Ø)",unit:"M",cat:"Structural Steel"},
+  {code:"MG10.0019",desc:"Steel Casing (10 mm thk, 1500 mm Ø)",unit:"M",cat:"Structural Steel"},
+  {code:"MG10.0020",desc:"Steel Sheet Pile, U-type (a36)",unit:"KG",cat:"Structural Steel"},
+  {code:"MG99.0001",desc:"Acetylene",unit:"KG",cat:"Various"},
+  {code:"MG99.0002",desc:"Oxygen",unit:"KG",cat:"Various"},
+  {code:"MG99.0003",desc:"Welding Rod",unit:"KG",cat:"Various"},
+  {code:"MG99.0012",desc:"Tarpaulin",unit:"SQFT",cat:"Various"},
+  {code:"MS01.0001",desc:"Precast Concrete Curb (3000 Psi)",unit:"M",cat:"Curb and Gutter"},
+  {code:"MS01.0002",desc:"Precast Concrete Gutter (3000 Psi)",unit:"M",cat:"Curb and Gutter"},
+  {code:"MS01.0003",desc:"Precast Concrete Curb & Gutter (3000 Psi)",unit:"M",cat:"Curb and Gutter"},
+  {code:"MS02.0001",desc:"Gabion, Metallic Coated (0.5m x 1m x 3m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0002",desc:"Gabion, Metallic Coated (0.5m x 1m x 4m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0003",desc:"Gabion, Metallic Coated (1m x 1m x 2m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0004",desc:"Gabion, Metallic Coated (1m x 1m x 3m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0005",desc:"Gabion, Metallic Coated (1m x 1m x 4m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0006",desc:"Gabion, PVC Coated (0.5m x 1m x 3m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0007",desc:"Gabion, PVC Coated (0.5m x 1m x 4m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0008",desc:"Gabion, PVC Coated (1m x 1m x 2m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0009",desc:"Gabion, PVC Coated (1m x 1m x 3m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0010",desc:"Gabion, PVC Coated (1m x 1m x 4m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0011",desc:"Mattress, Metallic Coated (0.3m x 2m x 6m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0012",desc:"Mattress, PVC Coated (0.3m x 2m x 6m)",unit:"PC",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0013",desc:"Filter Cloth",unit:"SQM",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0014",desc:"Coco-Net, Cgn 400",unit:"SQM",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0015",desc:"Coco-Net, Cgn 700",unit:"SQM",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0016",desc:"Fascine, Cgr 200",unit:"M",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0017",desc:"Fascine, Cgr 300",unit:"M",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0018",desc:"Sodding",unit:"SQM",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0019",desc:"Topsoil (garden Soil)",unit:"CUM",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0020",desc:"Vegetation, Hydroseeding",unit:"SQM",cat:"Slope and Bank Protection Material"},
+  {code:"MS02.0021",desc:"Vegetation, Vetiver Grass System",unit:"SQM",cat:"Slope and Bank Protection Material"},
+  {code:"MS05.0001",desc:"Prestressed Concrete Girder (aashto type I)",unit:"M",cat:"Girder"},
+  {code:"MS05.0002",desc:"Prestressed Concrete Girder (aashto type Ii)",unit:"M",cat:"Girder"},
+  {code:"MS05.0003",desc:"Prestressed Concrete Girder (aashto type Iii)",unit:"M",cat:"Girder"},
+  {code:"MS05.0004",desc:"Prestressed Concrete Girder (aashto type Iv)",unit:"M",cat:"Girder"},
+  {code:"MS05.0005",desc:"Prestressed Concrete Girder (aashto type IV-A)",unit:"M",cat:"Girder"},
+  {code:"MS05.0006",desc:"Prestressed Concrete Girder (aashto type IV-B)",unit:"M",cat:"Girder"},
+  {code:"MS05.0007",desc:"Prestressed Concrete Girder (aashto type V)",unit:"M",cat:"Girder"},
+  {code:"MS05.0008",desc:"Prestressed Concrete Girder (aashto type Vi)",unit:"M",cat:"Girder"},
+  {code:"MS05.0009",desc:"Prestressed Concrete Anchorage Assembly",unit:"SET",cat:"Girder"},
+  {code:"MS05.0010",desc:"Duct Tube, Galvanized Metal (50 mm Ø)",unit:"M",cat:"Girder"},
+  {code:"MS05.0011",desc:"High-Tensile Wire Strand (12.70 mm Ø)",unit:"KG",cat:"Girder"},
+  {code:"MS09.0001",desc:"Rigid Steel Conduit (1/2\" | 12.7 mm Ø, 6m)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0002",desc:"Rigid Steel Conduit (3/4\" | 19 mm Ø, 6m)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0003",desc:"Rigid Steel Conduit (1\" | 25.4 mm Ø, 6m)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0004",desc:"Rigid Steel Conduit Coupling (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0005",desc:"Rigid Steel Conduit Coupling (3/4\" | 19 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0006",desc:"Rigid Steel Conduit Coupling (1\" | 25.4 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0007",desc:"Rigid Steel Conduit Elbow, 90° (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0008",desc:"Rigid Steel Conduit Elbow, 90° (3/4\" | 19 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0009",desc:"Rigid Steel Conduit Elbow, 90° (1\" | 25.4 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0010",desc:"Rigid Steel Locknut and Bushing (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0011",desc:"Rigid Steel Locknut and Bushing (3/4\" | 19 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0012",desc:"Rigid Steel Locknut and Bushing (1\" | 25.4 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0013",desc:"PVC Conduit (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0014",desc:"PVC Conduit (3/4\" | 19 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0015",desc:"PVC Conduit (1\" | 25.4 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0016",desc:"PVC Conduit Elbow, 90° (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0017",desc:"PVC Conduit Elbow, 90° (3/4\" | 19 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0018",desc:"PVC Conduit Elbow, 90° (1\" | 25.4 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0019",desc:"PVC Male Adapter with Locknut (3/4\" | 19 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0020",desc:"PVC Male Adapter with Locknut (1\" | 25.4 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0021",desc:"Intermediate Metal Conduit (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0022",desc:"Intermediate Metal Conduit (3/4\" | 19 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0023",desc:"Intermediate Metal Conduit (1\" | 25.4 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0024",desc:"Intermediate Metal Conduit Coupling (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0025",desc:"Intermediate Metal Conduit Coupling (3/4\" | 19 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0026",desc:"Intermediate Metal Conduit Coupling (1\" | 25.4 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0027",desc:"Intermediate Metal Conduit Locknut and Bushing (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0028",desc:"Intermediate Metal Conduit Locknut and Bushing (3/4\" | 19 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0029",desc:"Intermediate Metal Conduit Locknut and Bushing (1\" | 25.4 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0030",desc:"Intermediate Metal Conduit Elbow, 90° (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0031",desc:"Intermediate Metal Conduit Elbow, 90° (3/4\" | 19 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0032",desc:"Intermediate Metal Conduit Elbow, 90° (1\" | 25.4 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0033",desc:"Flexible Metal Conduit (1/2\" | 12.7 mm Ø)",unit:"M",cat:"Electrical Works"},
+  {code:"MS09.0034",desc:"Flexible Metal Conduit Connector (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0035",desc:"Flexible PVC Conduit (1/2\" | 12.7 mm Ø)",unit:"M",cat:"Electrical Works"},
+  {code:"MS09.0036",desc:"Flexible PVC Conduit Connector (1/2\" | 12.7 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0037",desc:"Mica Tube (1/4\" | 6.35 Mmø)",unit:"M",cat:"Electrical Works"},
+  {code:"MS09.0038",desc:"Service Entrance Cap (1\" | 25.4 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0039",desc:"Service Entrance Cap (1 1/4\" | 32 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0040",desc:"Service Entrance Cap (1 1/2\" | 38 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0041",desc:"Service Entrance Cap (2\" | 50 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0042",desc:"Service Entrance Cap (2-1/2\" | 63 mm Ø)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0043",desc:"Square Box, GA 16 (4\" x 4\" x 2\")",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0044",desc:"Square Box, PVC (4\" x 4\" x 2\")",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0045",desc:"Utility Box, GA 16 (2\" x 4\" x 2\")",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0046",desc:"Utility Box, PVC (2\" x 4\" x 2\")",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0047",desc:"Surface type Utility Box (amco), PVC",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0048",desc:"Octagonal Junction Box, GA 16 (4\" x 4\" x 2\")",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0049",desc:"Octagonal Junction Box, PVC (4\" x 4\" x 2\")",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0050",desc:"Metal Pull Box, GA 16 (6\" x 6\" x 4\")",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0051",desc:"Metal Pull Box, GA 16 (12\" x 12\" x 4\")",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0052",desc:"Solderless Connector (20 mm Dia.)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0053",desc:"Electric Wire, THWN/THHN, 14 AWG (2 mm Ø)",unit:"M",cat:"Electrical Works"},
+  {code:"MS09.0054",desc:"Electric Wire, THWN/THHN, 12 AWG (3.5 mm Ø)",unit:"M",cat:"Electrical Works"},
+  {code:"MS09.0055",desc:"Electric Wire, THWN/THHN, 10 AWG (5.5 mm Ø)",unit:"M",cat:"Electrical Works"},
+  {code:"MS09.0056",desc:"Electric Wire, THWN/THHN, 8 AWG (8.0 mm Ø)",unit:"M",cat:"Electrical Works"},
+  {code:"MS09.0057",desc:"Switch, One-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0058",desc:"Switch, Two-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0059",desc:"Switch, Three-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0060",desc:"Three-Way Switch, One-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0061",desc:"Three-Way Switch, Two-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0062",desc:"Three-Way Switch, Three-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0063",desc:"Universal Outlet, One-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0064",desc:"Universal Outlet, Two-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0065",desc:"Universal Outlet, Three-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0066",desc:"Aircon Outlet, One-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0067",desc:"GFCI Outlet, Two-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0068",desc:"Floor-Mounted Universal Outlet, Two-Gang",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0069",desc:"Twist Lock Outlet (30 A)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0070",desc:"Electrical Tape (19 mm x 20 M)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0071",desc:"Mini Circuit Breaker, 20A, 2P, 10KA, Bolt-On",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0072",desc:"Mini Circuit Breaker, 20A, 3P, 10KA, Bolt-On",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0073",desc:"Mini Circuit Breaker, 20A, 2P, 10KA, Plug-In",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0074",desc:"Mini Circuit Breaker, 20A, 3P, 10KA, Plug-In",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0075",desc:"Molded Case Circuit Breaker, 100A, 230V, 2P, 25Kaic",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0076",desc:"Electrical Circuit Breaker, 100A, Nema 3R (housing Only)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0077",desc:"Panel Board, Bolt-On (2p, 12B)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS09.0078",desc:"Panel Board, Plug-In (2p, 12B)",unit:"PC",cat:"Electrical Works"},
+  {code:"MS10.0001",desc:"6W LED Downlight, Round, Surface-Mounted",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0002",desc:"9W LED Downlight, Round, Surface-Mounted",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0003",desc:"12W LED Downlight, Round, Surface-Mounted",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0004",desc:"18W LED Downlight, Round, Surface-Mounted",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0005",desc:"6W LED Downlight, Round, Recessed",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0006",desc:"9W LED Downlight, Round, Recessed",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0007",desc:"12W LED Downlight, Round, Recessed",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0008",desc:"18W LED Downlight, Round, Recessed",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0009",desc:"7W LED Bulb, E27",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0010",desc:"9W LED Bulb, E27",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0011",desc:"15W LED Bulb, E27",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0012",desc:"18W LED Bulb, E27",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0013",desc:"Ceiling Receptacle, Porcelain, E27",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0014",desc:"150W LED High Bay Light",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0015",desc:"10W LED Floodlight",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0016",desc:"Emergency Light, 2X3W LED",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS10.0017",desc:"Exit Sign Light, 3W LED",unit:"PC",cat:"Lighting Fixtures"},
+  {code:"MS07.0027",desc:"Reflectorized Traffic Paint, White",unit:"LTR",cat:"Road Safety Material"},
+  {code:"MS07.0028",desc:"Reflectorized Traffic Paint, Yellow",unit:"LTR",cat:"Road Safety Material"},
+  {code:"MS07.0029",desc:"Thermoplastic Paint, White (25 kg)",unit:"BAG",cat:"Road Safety Material"},
+  {code:"MS07.0030",desc:"Thermoplastic Paint, Yellow (25 kg)",unit:"BAG",cat:"Road Safety Material"},
+  {code:"MS07.0031",desc:"Glass Beads (25 kg)",unit:"BAG",cat:"Road Safety Material"},
+  {code:"MS07.0032",desc:"Primer",unit:"LTR",cat:"Road Safety Material"},
+  {code:"MS08.0001",desc:"Corrugated Roofing Sheet, GA 26",unit:"SQM",cat:"Roofing"},
+  {code:"MS08.0002",desc:"Rib-type Roofing Sheet, GA 26",unit:"SQM",cat:"Roofing"},
+  {code:"MS08.0003",desc:"Flashing, GA 26 (0.61 m x 2.44 M)",unit:"PC",cat:"Roofing"},
+  {code:"MS08.0004",desc:"Gutter, GA 24 (0.61 m x 2.44 M)",unit:"PC",cat:"Roofing"},
+  {code:"MS08.0005",desc:"Ridge Roll, GA 26 (0.61 m x 2.44 M)",unit:"PC",cat:"Roofing"},
+  {code:"MS08.0006",desc:"GI Sheet, Plain, GA 16 (1.22 m x 2.44 M)",unit:"PC",cat:"Roofing"},
+  {code:"MS08.0007",desc:"GI Sheet, Plain, GA 20 (1.22 m x 2.44 M)",unit:"PC",cat:"Roofing"},
+  {code:"MS08.0008",desc:"GI Sheet, Plain, GA 16 (1.22 m x 2.44 M)",unit:"PC",cat:"Roofing"},
+  {code:"MS11.0001",desc:"Fiber Cement Board (4.5 mm x 4\' x 8\')",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0002",desc:"Fiber Cement Board (9 mm x 4\' x 8\')",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0003",desc:"Single Furring, Metal (3/4\" x 2\" x 16\', 0.5 mm Thk.)",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0004",desc:"Double Furring, Metal (3/4\" x 2\" x 16\', 0.5 mm Thk.)",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0005",desc:"Metal Stud (4\" x 2\" x 10\', 0.5 mm Thk.)",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0006",desc:"Metal Stud (3\" x 2\" x 10\', 0.5 mm Thk.)",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0007",desc:"Carrying Channel (1\" x 2\" x 16\', 0.6 mm Thk.)",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0008",desc:"Carrying Channel (1\" x 2\" x 16\', 1.0 mm Thk.)",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0009",desc:"W-Clip (0.5 mm Thk.)",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0010",desc:"Wall Angle, GA 24 (1\" x 1\" x 10\', 0.6 mm Thk.)",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0011",desc:"Wall Angle, GA 26 (1\" x 1\" x 10\', 0.4 mm Thk.)",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0012",desc:"Blind Rivet, 50 Pcs. (5/32\" x 3/8\")",unit:"BOX",cat:"Finishing Works"},
+  {code:"MS11.0013",desc:"Tek Screw, 50 Pcs. (1\")",unit:"BOX",cat:"Finishing Works"},
+  {code:"MS11.0014",desc:"Tek Screw, 50 Pcs. (2\")",unit:"BOX",cat:"Finishing Works"},
+  {code:"MS11.0015",desc:"Gypsum Board (1/2\" x 4\' x 8\')",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0016",desc:"Gypsum Board, Moisture Resistant (1/2\" x 4\' x 8\')",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0017",desc:"Main Tee (1 1/2\" x 1\" x 12\', 0.3 mm Thk.)",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0018",desc:"Cross Tee Runner (1\" x 1\" x 4\', 0.3 mm Thk.)",unit:"PC",cat:"Finishing Works"},
+  {code:"MS11.0019",desc:"Black Screw, 50 Pcs. (3/4\")",unit:"BOX",cat:"Finishing Works"},
+  {code:"MS11.0020",desc:"Black Screw, 50 Pcs. (1\")",unit:"BOX",cat:"Finishing Works"},
+  {code:"MS12.0001",desc:"L-type Copper Refrigerant Pipe, 6m (1/4\" Ø)",unit:"PC",cat:"Airconditioning System"},
+  {code:"MS12.0002",desc:"L-type Copper Refrigerant Pipe, 6m (3/8\" Ø)",unit:"PC",cat:"Airconditioning System"},
+  {code:"MS12.0003",desc:"L-type Copper Refrigerant Pipe, 6m (1/2\" Ø)",unit:"PC",cat:"Airconditioning System"},
+  {code:"MS12.0004",desc:"L-type Copper Refrigerant Pipe, 6m (5/8\" Ø)",unit:"PC",cat:"Airconditioning System"},
+  {code:"MS12.0005",desc:"L-type Copper Refrigerant Pipe, 6m (3/4\" Ø)",unit:"PC",cat:"Airconditioning System"},
+  {code:"MS12.0006",desc:"L-type Copper Refrigerant Pipe, 6m (7/8\" Ø)",unit:"PC",cat:"Airconditioning System"},
+  {code:"MS12.0007",desc:"L-type Copper Refrigerant Pipe, 6m (1-1/8\" Ø)",unit:"PC",cat:"Airconditioning System"},
+  {code:"MS12.0008",desc:"Rubber Pipe Insulation, 25mm Thk. (1/4\" Ø)",unit:"M",cat:"Airconditioning System"},
+  {code:"MS12.0009",desc:"Rubber Pipe Insulation, 25mm Thk. (3/8\" Ø)",unit:"M",cat:"Airconditioning System"},
+  {code:"MS12.0010",desc:"Rubber Pipe Insulation, 25mm Thk. (1/2\" Ø)",unit:"M",cat:"Airconditioning System"},
+  {code:"MS12.0011",desc:"Rubber Pipe Insulation, 25mm Thk. (5/8\" Ø)",unit:"M",cat:"Airconditioning System"},
+  {code:"MS12.0012",desc:"Rubber Pipe Insulation, 25mm Thk. (3/4\" Ø)",unit:"M",cat:"Airconditioning System"},
+  {code:"MS12.0013",desc:"Rubber Pipe Insulation, 25mm Thk. (7/8\" Ø)",unit:"M",cat:"Airconditioning System"},
+  {code:"MS12.0014",desc:"Rubber Pipe Insulation, 25mm Thk. (1-1/8\" Ø)",unit:"M",cat:"Airconditioning System"},
+  {code:"MS13.0001",desc:"Spiral Round Duct, GI, 3m (6\" | 150mm Ø)",unit:"PC",cat:"Ventilating System"},
+  {code:"MS13.0002",desc:"Flexible Round Duct, Aluminum, 3m (6\" | 150mm Ø)",unit:"PC",cat:"Ventilating System"},
+  {code:"MS13.0003",desc:"Exhaust Vent Cap, Steel (6\" | 150mm Ø)",unit:"PC",cat:"Ventilating System"},
+  {code:"MS13.0004",desc:"Exhaust Rainhood (450 mm x 450 Mm)",unit:"PC",cat:"Ventilating System"},
+  {code:"MS14.0001",desc:"Fire Extinguisher, Portable, ABC Dry Chemical, 10 Lbs.",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0002",desc:"Fire Extinguisher, Portable, ABC Dry Chemical, 20 Lbs.",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0003",desc:"Fire Extinguisher, Wall-Mounted, Clean Agent HCFC-123, 19 Lbs.",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0004",desc:"Fire Hose Cabinet with UL/FM Approved Firehose (38 mm Ø x 30 M)",unit:"SET",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0005",desc:"Fire Department Connection (2-1/2\" x 2-1/2\" x 3\")",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0006",desc:"Siamese Twin (2-1/2\" x 2-1/2\" x 4\")",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0007",desc:"Gate Valve, NRS, 200 PSI (2\" | 50 mm Ø)",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0008",desc:"Gate Valve, NRS, 200 PSI (4\" | 100 mm Ø)",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0009",desc:"Gate Valve, OS&Y, 200 PSI (4\" | 100 mm Ø)",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0010",desc:"Check Valve, NRS, 200 PSI (4\" | 100 mm Ø)",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0011",desc:"Alarm Check Valve, NRS, 200 PSI (4\" | 100 mm Ø)",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0012",desc:"Flexible Connector, 200 PSI (2\" | 50 mm Ø)",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"},
+  {code:"MS14.0013",desc:"Flexible Connector, 200 PSI (4\" | 100 mm Ø)",unit:"PC",cat:"Automatic Fire Sprinkler System (AFSS)"}
+];
+// ── STATE ────────────────────────────────────────────────────────
+const ST = { eq:{sel:[],ai:0}, mat:{sel:[],ai:0} };
+
+// ── EQUIPMENT SETUP ──────────────────────────────────────────────
+const EQ = EQ_RAW.map(r=>{const p=r.split(",");return{name:p[0].trim(),meta:p.slice(1).join(" · "),fd:r,s:r.toLowerCase()};});
+document.getElementById("eq-total").textContent=EQ.length;
+document.getElementById("mat-total").textContent=MAT_RAW.length;
+
+// ── HELPERS ──────────────────────────────────────────────────────
+function hl(t,q){if(!q)return t;return t.replace(new RegExp("("+q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","gi"),"<mark>$1</mark>");}
+
+function toast(){const t=document.getElementById("toast");t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2200);}
+
+function copy(text,taId){
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(toast).catch(()=>fbCopy(text,taId));}
+  else fbCopy(text,taId);
+}
+function fbCopy(text,taId){const ta=document.getElementById(taId);ta.value=text;ta.removeAttribute("readonly");ta.select();ta.setSelectionRange(0,99999);document.execCommand("copy");ta.setAttribute("readonly","");ta.blur();toast();}
+
+function switchTab(t){
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(x=>x.classList.remove("active"));
+  event.currentTarget.classList.add("active");
+  document.getElementById("tab-"+t).classList.add("active");
+}
+
+// ── EQUIPMENT RENDER ─────────────────────────────────────────────
+function eqFilt(){const q=document.getElementById("eq-search").value.trim().toLowerCase();return q?EQ.filter(e=>e.s.includes(q)):[...EQ];}
+
+function renderEq(){
+  const q=document.getElementById("eq-search").value.trim();
+  const f=eqFilt(),s=ST.eq;
+  if(s.ai>=f.length)s.ai=0;
+  document.getElementById("eq-show").textContent=f.length;
+  document.getElementById("eq-sel").textContent=s.sel.length;
+  const list=document.getElementById("eq-list");
+  if(!f.length){list.innerHTML='<div class="no-results">No equipment found.</div>';return;}
+  list.innerHTML=f.map((e,i)=>{
+    const sel=s.sel.includes(e.fd),active=i===s.ai;
+    const safe=e.fd.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    return `<div class="item${sel?" selected":""}${active?" active-row":""}" id="eq-r${i}" onclick="eqTog('${safe}')"><div class="chk"></div><div class="item-text"><div class="item-name">${hl(e.name,q)}</div>${e.meta?`<div class="item-sub">${hl(e.meta,q)}</div>`:""}</div></div>`;
+  }).join("");
+  const ar=document.getElementById("eq-r"+s.ai);if(ar)ar.scrollIntoView({block:"nearest"});
+  renderEqSheet();
+}
+
+function renderEqSheet(){
+  const s=ST.eq;
+  document.getElementById("eq-sel").textContent=s.sel.length;
+  document.getElementById("eq-sel2").textContent=s.sel.length;
+  const p=document.getElementById("eq-panel");
+  if(!s.sel.length){p.classList.remove("visible");return;}
+  p.classList.add("visible");
+  document.getElementById("eq-body").innerHTML=s.sel.map((fd,i)=>{
+    const safe=fd.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    return `<tr><td>${i+1}</td><td>${fd}</td><td><button class="row-del" onclick="eqDel('${safe}')">×</button></td></tr>`;
+  }).join("");
+}
+
+function eqTog(fd){const s=ST.eq,i=s.sel.indexOf(fd);if(i>-1)s.sel.splice(i,1);else s.sel.push(fd);renderEq();}
+function eqDel(fd){ST.eq.sel=ST.eq.sel.filter(x=>x!==fd);renderEq();}
+
+// ── MATERIALS RENDER ─────────────────────────────────────────────
+function matFilt(){const q=document.getElementById("mat-search").value.trim().toLowerCase();return q?MAT_RAW.filter(m=>(m.desc+" "+m.code+" "+m.cat+" "+m.unit).toLowerCase().includes(q)):[...MAT_RAW];}
+
+function renderMat(){
+  const q=document.getElementById("mat-search").value.trim();
+  const f=matFilt(),s=ST.mat;
+  if(s.ai>=f.length)s.ai=0;
+  document.getElementById("mat-show").textContent=f.length;
+  document.getElementById("mat-sel").textContent=s.sel.length;
+  const list=document.getElementById("mat-list");
+  if(!f.length){list.innerHTML='<div class="no-results">No materials found.</div>';renderMatSheet();return;}
+  let html="",lastCat=null;
+  f.forEach((m,i)=>{
+    const sel=s.sel.includes(m.code),active=i===s.ai;
+    const safe=m.code.replace(/'/g,"\\'");
+    if(!q&&m.cat!==lastCat){html+=`<div class="category-row">${m.cat}</div>`;lastCat=m.cat;}
+    html+=`<div class="item${sel?" selected":""}${active?" active-row":""}" id="mat-r${i}" onclick="matTog('${safe}')">
+      <div class="chk"></div>
+      <div class="item-text">
+        <div class="item-name">${hl(m.desc,q)}</div>
+        <div class="item-sub"><span class="item-code">${hl(m.code,q)}</span> &nbsp;·&nbsp; <span class="item-unit">${hl(m.unit,q)}</span>${q?` &nbsp;·&nbsp; <span style="color:var(--accent3);font-size:9px">${hl(m.cat,q)}</span>`:""}</div>
+      </div></div>`;
+  });
+  list.innerHTML=html;
+  const ar=document.getElementById("mat-r"+s.ai);if(ar)ar.scrollIntoView({block:"nearest"});
+  renderMatSheet();
+}
+
+function renderMatSheet(){
+  const s=ST.mat;
+  document.getElementById("mat-sel").textContent=s.sel.length;
+  document.getElementById("mat-sel2").textContent=s.sel.length;
+  const p=document.getElementById("mat-panel");
+  if(!s.sel.length){p.classList.remove("visible");return;}
+  p.classList.add("visible");
+  document.getElementById("mat-body").innerHTML=s.sel.map((code,i)=>{
+    const m=MAT_RAW.find(x=>x.code===code);
+    const safe=code.replace(/'/g,"\\'");
+    return `<tr><td>${i+1}</td><td>${m?m.desc:code}</td><td class="td-unit">${m?m.unit:""}</td><td><button class="row-del" onclick="matDel('${safe}')">×</button></td></tr>`;
+  }).join("");
+}
+
+function matTog(code){const s=ST.mat,i=s.sel.indexOf(code);if(i>-1)s.sel.splice(i,1);else s.sel.push(code);renderMat();}
+function matDel(code){ST.mat.sel=ST.mat.sel.filter(x=>x!==code);renderMat();}
+
+// ── SELECT / CLEAR ALL ───────────────────────────────────────────
+function selAll(t){
+  if(t==="eq"){eqFilt().forEach(e=>{if(!ST.eq.sel.includes(e.fd))ST.eq.sel.push(e.fd);});renderEq();}
+  else{matFilt().forEach(m=>{if(!ST.mat.sel.includes(m.code))ST.mat.sel.push(m.code);});renderMat();}
+}
+function clrAll(t){if(t==="eq"){ST.eq.sel=[];renderEq();}else{ST.mat.sel=[];renderMat();}}
+
+// ── COPY ─────────────────────────────────────────────────────────
+function doCopy(t){
+  if(t==="eq"){copy(ST.eq.sel.join("\n"),"eq-ta");}
+  else{
+    const text=ST.mat.sel.map(code=>{const m=MAT_RAW.find(x=>x.code===code);return m?m.desc+"\t"+m.unit:code;}).join("\n");
+    copy(text,"mat-ta");
+  }
+}
+
+// ── KEYBOARD ─────────────────────────────────────────────────────
+function bindKeys(inputId,filtFn,togFn,renderFn,stKey,clearId){
+  document.getElementById(inputId).addEventListener("input",()=>{ST[stKey].ai=0;renderFn();});
+  document.getElementById(inputId).addEventListener("keydown",e=>{
+    const f=filtFn();if(!f.length)return;
+    const s=ST[stKey];
+    if(e.key==="ArrowDown"){e.preventDefault();s.ai=(s.ai+1)%f.length;renderFn();}
+    else if(e.key==="ArrowUp"){e.preventDefault();s.ai=(s.ai-1+f.length)%f.length;renderFn();}
+    else if(e.key==="Enter"){e.preventDefault();togFn(f[s.ai]);document.getElementById(inputId).value="";s.ai=0;renderFn();}
+    else if(e.key==="Escape"){document.getElementById(inputId).value="";s.ai=0;renderFn();}
+  });
+}
+
+bindKeys("eq-search",eqFilt,e=>{if(!ST.eq.sel.includes(e.fd))ST.eq.sel.push(e.fd);},renderEq,"eq");
+bindKeys("mat-search",matFilt,m=>{if(!ST.mat.sel.includes(m.code))ST.mat.sel.push(m.code);},renderMat,"mat");
+
+// ── INIT ─────────────────────────────────────────────────────────
+renderEq();
+renderMat();
+</script>
+</body>
+</html>
