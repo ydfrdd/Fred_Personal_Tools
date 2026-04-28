@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>C3D Earthwork Report Processor</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&display=swap');
+  :root {
+    --cut:#c0392b; --fill:#2471a3; --structure:#1e8449;
+    --bg:#f4f6f7; --card:#ffffff; --border:#d5d8dc;
+    --text:#1c2833; --muted:#626567; --header-bg:#1c2833; --accent:#e67e22;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);font-size:13px;}
+
+  /* ── DROP SCREEN ── */
+  #drop-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;}
+  .drop-logo{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:32px;}
+  .drop-zone{width:100%;max-width:520px;border:2px dashed var(--border);border-radius:12px;padding:60px 40px;text-align:center;background:var(--card);transition:border-color 0.2s,background 0.2s;position:relative;}
+  .drop-zone.drag-over{border-color:var(--accent);background:#fef9f3;}
+  .drop-icon{font-size:48px;margin-bottom:16px;display:block;pointer-events:none;}
+  .drop-zone h2{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--header-bg);margin-bottom:8px;pointer-events:none;}
+  .drop-zone p{color:var(--muted);font-size:13px;margin-bottom:20px;pointer-events:none;}
+  .browse-btn{display:inline-block;padding:10px 24px;background:var(--header-bg);color:#fff;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;letter-spacing:1px;cursor:pointer;text-transform:uppercase;transition:background 0.2s;border:none;position:relative;z-index:10;}
+  .browse-btn:hover{background:var(--accent);}
+  #file-input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;}
+  .drop-note{margin-top:16px;font-size:11px;color:#aab7b8;pointer-events:none;}
+
+  /* ── ERROR MODAL ── */
+  #error-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;}
+  #error-modal.show{display:flex;}
+  .modal-box{background:#fff;border-radius:10px;padding:32px 36px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.2);text-align:center;}
+  .modal-icon{font-size:40px;margin-bottom:12px;}
+  .modal-box h3{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--header-bg);margin-bottom:8px;}
+  .modal-box p{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:20px;}
+  .modal-close{padding:9px 28px;background:var(--header-bg);color:#fff;border:none;border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;letter-spacing:1px;cursor:pointer;text-transform:uppercase;}
+  .modal-close:hover{background:var(--accent);}
+
+  /* ── REPORT SCREEN ── */
+  #report-screen{display:none;}
+  .report-header{background:var(--header-bg);color:#fff;padding:24px 40px 18px;border-bottom:4px solid var(--accent);display:flex;justify-content:space-between;align-items:flex-start;gap:20px;}
+  .report-header h1{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:700;letter-spacing:1px;text-transform:uppercase;}
+  .report-header .sub{font-size:11px;color:#aab7b8;margin-top:4px;}
+  .meta-grid{display:flex;gap:24px;margin-top:14px;flex-wrap:wrap;}
+  .meta-item label{display:block;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#aab7b8;margin-bottom:1px;}
+  .meta-item span{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;color:#fff;}
+  .action-bar{display:flex;flex-direction:column;gap:8px;flex-shrink:0;}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:5px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;cursor:pointer;border:none;transition:opacity 0.15s;white-space:nowrap;}
+  .btn:hover{opacity:0.85;}
+  .btn-pdf{background:#c0392b;color:#fff;}
+  .btn-xls{background:#1e8449;color:#fff;}
+  .btn-new{background:#444;color:#fff;}
+
+  /* ── TABLE ── */
+  .table-section{padding:20px 40px 40px;}
+  .table-section h2{font-family:'Barlow Condensed',sans-serif;font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:12px;border-left:3px solid var(--accent);padding-left:8px;}
+  .table-wrap{overflow-x:auto;border-radius:6px;box-shadow:0 1px 6px rgba(0,0,0,0.08);}
+  table{width:100%;border-collapse:collapse;background:var(--card);font-size:12px;table-layout:fixed;}
+  thead tr.group-header th{font-family:'Barlow Condensed',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:1px;padding:6px 10px;text-align:center;border-right:1px solid #2e4057;color:#fff;}
+  thead tr.group-header th.sta-head{background:var(--header-bg);text-align:left;}
+  thead tr.group-header th.cut-group{background:#922b21;}
+  thead tr.group-header th.fill-group{background:#1a5276;}
+  thead tr.group-header th.str-group{background:#145a32;}
+  thead tr.col-header th{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;padding:6px 8px;text-align:right;border-right:1px solid #2e4057;white-space:nowrap;background:#212f3d;color:#fff;}
+  thead tr.col-header th:first-child{text-align:left;}
+  tbody tr{border-bottom:1px solid var(--border);}
+  tbody tr:hover{background:#eaf0f6 !important;}
+  tbody tr:nth-child(even){background:#f8f9fa;}
+  td{padding:6px 8px;text-align:right;border-right:1px solid #e5e8e8;white-space:nowrap;}
+  td:first-child{text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:0.5px;color:var(--header-bg);padding-left:12px;}
+  td.cut-val{color:var(--cut);}
+  td.fill-val{color:var(--fill);}
+  td.str-val{color:var(--structure);}
+  tfoot tr{background:var(--header-bg);color:#fff;}
+  tfoot td{padding:8px;border-right:1px solid #2e4057;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;text-align:right;}
+  tfoot td:first-child{text-align:left;padding-left:12px;}
+
+  @media print {
+    #drop-screen,#error-modal,.action-bar{display:none!important;}
+    #report-screen{display:block!important;}
+    .report-header,thead tr,tfoot tr,tbody tr:nth-child(even){-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ERROR MODAL -->
+<div id="error-modal">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <h3>Cannot Read File</h3>
+    <p id="error-msg">The file could not be processed. Please make sure it is a valid Civil 3D Earthwork XML export (AeccEarthworkXML format).</p>
+    <button class="modal-close" onclick="closeError()">Try Again</button>
+  </div>
+</div>
+
+<!-- DROP SCREEN -->
+<div id="drop-screen">
+  <div class="drop-logo">C3D Earthwork Report Processor</div>
+  <div class="drop-zone" id="drop-zone">
+    <span class="drop-icon">📄</span>
+    <h2>Drop your XML file here</h2>
+    <p>Civil 3D Earthwork / Quantity Report XML output</p>
+    <button class="browse-btn" id="browse-btn">Browse File</button>
+    <input type="file" id="file-input" accept=".xml,.XML">
+    <div class="drop-note">Supports AeccEarthworkXML format &nbsp;·&nbsp; No internet required &nbsp;·&nbsp; Nothing is uploaded</div>
+  </div>
+</div>
+
+<!-- REPORT SCREEN -->
+<div id="report-screen">
+  <div class="report-header">
+    <div>
+      <h1 id="rpt-title">Earthwork Quantity Report</h1>
+      <div class="sub" id="rpt-sub"></div>
+      <div class="meta-grid" id="rpt-meta"></div>
+    </div>
+    <div class="action-bar">
+      <button class="btn btn-pdf" onclick="savePDF()">🖨 Save as PDF</button>
+      <button class="btn btn-xls" onclick="exportXLS()">📊 Export to XLS</button>
+      <button class="btn btn-new" onclick="resetTool()">↩ Load New File</button>
+    </div>
+  </div>
+  <div class="table-section">
+    <h2>Cross Section Area Data</h2>
+    <div class="table-wrap">
+      <table id="rpt-table">
+        <thead id="rpt-thead"></thead>
+        <tbody id="rpt-tbody"></tbody>
+        <tfoot id="rpt-tfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══ ELEMENTS ══
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const browseBtn = document.getElementById('browse-btn');
+
+// ══ BROWSE BUTTON ── trigger file input directly
+browseBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  fileInput.value = '';
+  fileInput.click();
+});
+
+// ══ FILE INPUT CHANGE ──
+fileInput.addEventListener('change', () => {
+  const file = fileInput.files[0];
+  if (file) processFile(file);
+});
+
+// ══ DRAG & DROP ──
+// Prevent browser from opening file on drop outside zone
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => e.preventDefault());
+
+dropZone.addEventListener('dragenter', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', e => {
+  // Only remove if leaving the dropzone entirely
+  if (!dropZone.contains(e.relatedTarget)) dropZone.classList.remove('drag-over');
+});
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  if (!file.name.toLowerCase().endsWith('.xml')) {
+    showError('Wrong file type. Please drop a .xml file exported from Civil 3D.');
+    return;
+  }
+  processFile(file);
+});
+
+// ══ ERROR MODAL ──
+function showError(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-modal').classList.add('show');
+}
+function closeError() {
+  document.getElementById('error-modal').classList.remove('show');
+  fileInput.value = '';
+}
+
+// ══ RESET ──
+function resetTool() {
+  document.getElementById('drop-screen').style.display = 'flex';
+  document.getElementById('report-screen').style.display = 'none';
+  fileInput.value = '';
+  _reportData = null;
+}
+
+// ══ PROCESS FILE ──
+function processFile(file) {
+  const reader = new FileReader();
+  reader.onerror = () => showError('Could not read the file. It may be corrupted or inaccessible.');
+  reader.onload = e => {
+    try {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(e.target.result, 'text/xml');
+
+      // Check for XML parse error
+      const parseErr = xml.querySelector('parsererror');
+      if (parseErr) {
+        showError('The file contains invalid XML. Make sure it is an unmodified Civil 3D export.');
+        return;
+      }
+
+      // Check it is the right format
+      const root = xml.documentElement;
+      if (root.tagName !== 'AeccEarthworkXML') {
+        showError(`Unrecognized format. Expected AeccEarthworkXML but got <${root.tagName}>. Please use the Civil 3D Quantities Report export.`);
+        return;
+      }
+
+      const data = parseXML(xml);
+
+      if (!data.sections.length) {
+        showError('No cross section data found in this file. The XML may be empty or incomplete.');
+        return;
+      }
+
+      renderReport(data, file.name);
+
+    } catch(err) {
+      showError('Unexpected error: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ══ PARSE XML ──
+function parseXML(xml) {
+  const alignment  = xml.querySelector('Alignment');
+  const crossSects = xml.querySelector('CrossSects');
+  const app        = xml.querySelector('Application');
+
+  // All materials from MaterialList — preserve order
+  const materialDefs = [...xml.querySelectorAll('Material')].map(m => ({
+    name: m.getAttribute('name'),
+    type: m.getAttribute('quantityType'),
+  }));
+
+  // All cross sections — read all MaterialCrossSect children dynamically
+  const sections = [...xml.querySelectorAll('CrossSect')].map(cs => {
+    const mats = {};
+    cs.querySelectorAll('MaterialCrossSect').forEach(m => {
+      mats[m.getAttribute('name')] = {
+        area:      parseFloat(m.getAttribute('area')      || 0),
+        volume:    parseFloat(m.getAttribute('volume')    || 0),
+        cumVolume: parseFloat(m.getAttribute('cumVolume') || 0),
+      };
+    });
+    return {
+      name:         cs.getAttribute('name'),
+      sta:          parseFloat(cs.getAttribute('sta')),
+      areaCut:      parseFloat(cs.getAttribute('areaCut')),
+      areaFill:     parseFloat(cs.getAttribute('areaFill')),
+      volumeCut:    parseFloat(cs.getAttribute('volumeCut')),
+      volumeFill:   parseFloat(cs.getAttribute('volumeFill')),
+      cumVolumeCut: parseFloat(cs.getAttribute('cumVolumeCut')),
+      cumVolumeFill:parseFloat(cs.getAttribute('cumVolumeFill')),
+      massHaul:     parseFloat(cs.getAttribute('massHaul')),
+      materials: mats,
+    };
+  });
+
+  const cutMat    = materialDefs.find(m => m.type === 'Cut');
+  const fillMat   = materialDefs.find(m => m.type === 'Fill');
+  const structMats = materialDefs
+    .filter(m => m.type === 'Structures');
+
+  return {
+    alignmentName: alignment?.getAttribute('name')  || '—',
+    startSta:      alignment?.getAttribute('startSta') || '0',
+    endSta:        alignment?.getAttribute('endSta')   || '0',
+    slCollection:  crossSects?.getAttribute('name') || '—',
+    appName:       app?.getAttribute('name')        || 'Autodesk Civil 3D',
+    materialDefs, cutMat, fillMat, structMats, sections,
+  };
+}
+
+// ══ FORMAT HELPERS ──
+function fmt(v, dec=3) {
+  if (v === undefined || v === null || isNaN(v)) return '—';
+  return v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+function fmtSta(v) {
+  const km = Math.floor(v / 1000);
+  const m  = (v % 1000).toFixed(2).padStart(6, '0');
+  return `${km}+${m}`;
+}
+
+// ══ RENDER REPORT ──
+let _reportData = null;
+
+function renderReport(data, filename) {
+  _reportData = data;
+  document.getElementById('drop-screen').style.display   = 'none';
+  document.getElementById('report-screen').style.display = 'block';
+
+  document.getElementById('rpt-title').textContent = 'Earthwork Quantity Report';
+  document.getElementById('rpt-sub').textContent   = data.appName + ' — XML Quantity Export';
+
+  const startSta = parseFloat(data.startSta);
+  const endSta   = parseFloat(data.endSta);
+  const length   = (endSta - startSta).toFixed(3);
+
+  document.getElementById('rpt-meta').innerHTML = `
+    <div class="meta-item"><label>Alignment</label><span>${data.alignmentName}</span></div>
+    <div class="meta-item"><label>SL Collection</label><span>${data.slCollection}</span></div>
+    <div class="meta-item"><label>Start Station</label><span>${fmtSta(startSta)}</span></div>
+    <div class="meta-item"><label>End Station</label><span>${fmtSta(endSta)}</span></div>
+    <div class="meta-item"><label>Length</label><span>${length} m</span></div>
+    <div class="meta-item"><label>Sections</label><span>${data.sections.length}</span></div>
+    <div class="meta-item"><label>Materials</label><span>${data.materialDefs.length} detected</span></div>
+    <div class="meta-item"><label>File</label><span>${filename}</span></div>
+  `;
+
+  buildTable(data);
+}
+
+// ══ BUILD TABLE ──
+function buildTable(data) {
+  const thead = document.getElementById('rpt-thead');
+  const tbody = document.getElementById('rpt-tbody');
+  const tfoot = document.getElementById('rpt-tfoot');
+
+  const cutName  = data.cutMat?.name  || 'Ground Removed';
+  const fillName = data.fillMat?.name || 'Ground Fill';
+  const structs  = data.structMats;
+
+  // Dynamic equal column widths via colgroup
+  const totalCols  = 1 + 2 + structs.length; // station + cut + fill + structs
+  const stationPct = 12; // station col fixed at 12%
+  const dataPct    = ((100 - stationPct) / (totalCols - 1)).toFixed(2);
+  const table      = document.querySelector('#rpt-table') || document.querySelector('table');
+  let colgroup = table.querySelector('colgroup');
+  if (!colgroup) { colgroup = document.createElement('colgroup'); table.prepend(colgroup); }
+  colgroup.innerHTML = `<col style="width:${stationPct}%">` +
+    Array(totalCols - 1).fill(`<col style="width:${dataPct}%">`).join('');
+
+  // Group header row
+  let grp = `<tr class="group-header">
+    <th class="sta-head" rowspan="2">Station</th>
+    <th class="cut-group">${cutName}</th>
+    <th class="fill-group">${fillName}</th>`;
+  structs.forEach(m => { grp += `<th class="str-group">${m.name}</th>`; });
+  grp += `</tr>`;
+
+  // Column sub-header row
+  let col = `<tr class="col-header">
+    <th>Area (m²)</th>
+    <th>Area (m²)</th>`;
+  structs.forEach(() => { col += `<th>Area (m²)</th>`; });
+  col += `</tr>`;
+
+  thead.innerHTML = grp + col;
+
+  // Data rows
+  let rows = '';
+  data.sections.forEach(s => {
+    let sCells = structs.map(m => `<td class="str-val">${fmt(s.materials[m.name]?.area ?? 0)}</td>`).join('');
+    rows += `<tr>
+      <td>${s.name}</td>
+      <td class="cut-val">${fmt(s.areaCut)}</td>
+      <td class="fill-val">${fmt(s.areaFill)}</td>
+      ${sCells}
+    </tr>`;
+  });
+  tbody.innerHTML = rows;
+
+  // Footer
+  let fCells = structs.map(() => `<td>—</td>`).join('');
+  tfoot.innerHTML = `<tr>
+    <td>END OF REPORT</td>
+    <td>—</td><td>—</td>${fCells}
+  </tr>`;
+}
+
+// ══ SAVE PDF ──
+function savePDF() {
+  window.print();
+}
+
+// ══ EXPORT XLS ──
+function exportXLS() {
+  if (!_reportData) return;
+  const data     = _reportData;
+  const cutName  = data.cutMat?.name  || 'Ground Removed';
+  const fillName = data.fillMat?.name || 'Ground Fill';
+  const structs  = data.structMats;
+
+  const wb = XLSX.utils.book_new();
+
+  // Data sheet
+  const header = ['Station', `${cutName} Area (m²)`, `${fillName} Area (m²)`, ...structs.map(m => `${m.name} Area (m²)`)];
+  const rows   = [header];
+  data.sections.forEach(s => {
+    rows.push([s.name, s.areaCut, s.areaFill, ...structs.map(m => s.materials[m.name]?.area ?? 0)]);
+    rows.push([]);  // empty row after each station
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:14},{wch:22},{wch:22},...structs.map(()=>({wch:22}))];
+
+  // Project info sheet
+  const meta = [
+    ['Field','Value'],
+    ['Alignment', data.alignmentName],
+    ['SL Collection', data.slCollection],
+    ['Start Station', fmtSta(parseFloat(data.startSta))],
+    ['End Station', fmtSta(parseFloat(data.endSta))],
+    ['No. of Sections', data.sections.length],
+    ['Materials', data.materialDefs.map(m=>m.name).join(', ')],
+    ['Generated', new Date().toLocaleString()],
+  ];
+  const wsMeta = XLSX.utils.aoa_to_sheet(meta);
+  wsMeta['!cols'] = [{wch:20},{wch:45}];
+
+  XLSX.utils.book_append_sheet(wb, wsMeta, 'Project Info');
+  XLSX.utils.book_append_sheet(wb, ws, 'Cross Section Areas');
+
+  const safeName = data.alignmentName.replace(/[^a-zA-Z0-9_-]/g,'_');
+  XLSX.writeFile(wb, `Earthwork_${safeName}.xlsx`);
+}
+</script>
+</body>
+</html>
