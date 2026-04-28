@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FA Personal Work Tools</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1419;
+    --surface: #1a2230;
+    --border: #2a3548;
+    --accent: #e67e22;
+    --accent2: #f39c12;
+    --text: #e8ecf0;
+    --muted: #7a8fa6;
+    --cut: #e74c3c;
+    --fill: #3498db;
+    --green: #2ecc71;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND GRID ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(230,126,34,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(230,126,34,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    z-index: 1;
+    padding: 60px 60px 40px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 60px;
+    width: 80px; height: 3px;
+    background: var(--accent);
+  }
+  .logo-block {}
+  .logo-tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .logo-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 48px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .logo-title span { color: var(--accent); }
+  .header-meta {
+    text-align: right;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .header-meta strong {
+    display: block;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* ── MAIN ── */
+  main {
+    position: relative;
+    z-index: 1;
+    padding: 60px;
+  }
+
+  .section-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── TOOL CARDS ── */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 24px;
+    margin-bottom: 60px;
+  }
+
+  .tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transition: border-color 0.2s, transform 0.2s;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+  }
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--card-accent, var(--accent));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+  .tool-card:hover {
+    border-color: var(--card-accent, var(--accent));
+    transform: translateY(-3px);
+  }
+  .tool-card:hover::before { transform: scaleX(1); }
+
+  .tool-card.civil3d  { --card-accent: #e67e22; }
+  .tool-card.eqp      { --card-accent: #3498db; }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .card-icon {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .civil3d .card-icon { background: rgba(230,126,34,0.12); }
+  .eqp     .card-icon { background: rgba(52,152,219,0.12); }
+
+  .card-badge {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid;
+  }
+  .civil3d .card-badge { color: var(--accent);  border-color: rgba(230,126,34,0.3); background: rgba(230,126,34,0.08); }
+  .eqp     .card-badge { color: var(--fill);    border-color: rgba(52,152,219,0.3); background: rgba(52,152,219,0.08); }
+
+  .card-body {}
+  .card-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text);
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+  }
+  .card-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--green);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .launch-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 5px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: opacity 0.15s;
+    cursor: pointer;
+  }
+  .civil3d .launch-btn { background: var(--accent);  color: #fff; }
+  .eqp     .launch-btn { background: var(--fill);    color: #fff; }
+  .launch-btn:hover { opacity: 0.85; }
+  .launch-arrow { font-size: 14px; transition: transform 0.2s; }
+  .tool-card:hover .launch-arrow { transform: translateX(3px); }
+
+  /* ── DISCLAIMER ── */
+  .disclaimer-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 28px 32px;
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+  .disclaimer-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .disclaimer-content {}
+  .disclaimer-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .disclaimer-text {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .disclaimer-text p + p { margin-top: 8px; }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 24px 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <div class="logo-tag">Personal Work Tools</div>
+    <div class="logo-title"><span>FA</span> Work Tools</div>
+  </div>
+  <div class="header-meta">
+    <strong>Civil Engineering Utilities</strong>
+    DPWH · Infrastructure · Estimation
+  </div>
+</header>
+
+<main>
+  <div class="section-label">Available Tools</div>
+
+  <div class="tools-grid">
+
+    <!-- TOOL 1: Civil3D -->
+    <div class="tool-card civil3d">
+      <div class="card-top">
+        <div class="card-icon">🏗️</div>
+        <div class="card-badge">Civil 3D</div>
+      </div>
+      <div class="card-body">
+        <div class="card-title">Civil3D Material Report Processor</div>
+        <div class="card-desc">Processes Civil 3D XML quantity exports into a clean, printable cross-section area report. Supports dynamic material detection, PDF export, and XLS download.</div>
+      </div>
+      <div class="card-footer">
+        <div class="card-status"><div class="status-dot"></div>Active</div>
+        <a href="c3d_material_processor" class="launch-btn">Launch <span class="launch-arrow">→</span></a>
+      </div>
+    </div>
+
+    <!-- TOOL 2: Equipment & Materials -->
+    <div class="tool-card eqp">
+      <div class="card-top">
+        <div class="card-icon">📋</div>
+        <div class="card-badge">Estimation</div>
+      </div>
+      <div class="card-body">
+        <div class="card-title">Equipment & Materials Reference</div>
+        <div class="card-desc">Quick reference for equipment and material costs for estimation work using DPWH references. Supports cost lookups and estimation workflows.</div>
+      </div>
+      <div class="card-footer">
+        <div class="card-status"><div class="status-dot"></div>Active</div>
+        <a href="eqp_matl_ref" class="launch-btn">Launch <span class="launch-arrow">→</span></a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-label">Disclaimer</div>
+
+  <div class="disclaimer-box">
+    <div class="disclaimer-icon">⚠️</div>
+    <div class="disclaimer-content">
+      <div class="disclaimer-title">Important Notice on Tool Usage & Reference Applicability</div>
+      <div class="disclaimer-text">
+        <p>These tools are developed for personal professional use and are provided as-is without any guarantee of accuracy, completeness, or fitness for any particular purpose. All outputs should be independently verified before use in official documents, submissions, or project deliverables.</p>
+        <p>References used in these tools — including DPWH standard rates, equipment costs, and material prices — are based on data available at the time of development. These references are subject to change through updated DPWH Department Orders, regional adjustments, or market conditions. This page may not be updated promptly to reflect such changes, and the author assumes no responsibility for decisions made based on outdated reference data.</p>
+        <p>Users are advised to cross-check against the latest applicable DPWH issuances and official price references before finalizing any cost estimates or quantity reports.</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span>FA Personal Work Tools</span>
+  <span>For professional use only — verify all outputs independently</span>
+</footer>
+
+</body>
+</html>
