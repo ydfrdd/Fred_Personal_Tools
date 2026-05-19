@@ -915,6 +915,19 @@ createApp({
     onMounted(() => {
       const saved = State.loadLatest();
       if (saved) {
+        // Migrate old limits format (from/to) to segments array
+        if (saved.limits && !Array.isArray(saved.limits.segments)) {
+          saved.limits.segments = [{
+            id: Utils.uid(),
+            from: saved.limits.from || '',
+            to:   saved.limits.to   || '',
+          }];
+          delete saved.limits.from;
+          delete saved.limits.to;
+        }
+        if (!saved.limits) saved.limits = State.limitsDefaults();
+        if (!saved.limits.segments || !saved.limits.segments.length)
+          saved.limits.segments = [State.newSegment()];
         Object.assign(session, saved);
         if (saved._outputTags) Object.assign(outputTags, saved._outputTags);
         if (saved._unitCosts)  Object.assign(unitCosts, saved._unitCosts);
@@ -1019,6 +1032,7 @@ createApp({
 
     // ── Segments ─────────────────────────────────────────
     function addSegment() {
+      if (!Array.isArray(session.limits.segments)) session.limits.segments = [];
       session.limits.segments.push(State.newSegment());
     }
     function deleteSegment(id) {
