@@ -1018,17 +1018,18 @@ createApp({
       }
     });
 
-    // ── Auto-save ────────────────────────────────────────
-    watch(() => JSON.stringify(session), () => {
-      session._outputTags = JSON.parse(JSON.stringify(outputTags));
-      session._unitCosts  = JSON.parse(JSON.stringify(unitCosts));
-      State.save(session);
-    }, { deep: true });
-
-    watch(() => JSON.stringify(outputTags), () => {
-      session._outputTags = JSON.parse(JSON.stringify(outputTags));
-      State.save(session);
-    }, { deep: true });
+    // ── Auto-save (debounced, not on every keystroke) ───
+    let _saveTimer = null;
+    function scheduleSave() {
+      if (_saveTimer) clearTimeout(_saveTimer);
+      _saveTimer = setTimeout(() => {
+        session._outputTags = JSON.parse(JSON.stringify(outputTags));
+        session._unitCosts  = JSON.parse(JSON.stringify(unitCosts));
+        State.save(session);
+      }, 800);
+    }
+    watch(session, scheduleSave, { deep: true });
+    watch(outputTags, scheduleSave, { deep: true });
 
     // ── Active Component ─────────────────────────────────
     const activeComp = computed(() =>
