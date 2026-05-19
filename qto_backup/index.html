@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QTO Backup Computation — FA Work Tools</title>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700&family=Barlow:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700&family=Barlow:wght@300;400;500;600&display=swap"></noscript>
 <style>
 :root{--bg:#0f1419;--surface:#1a2230;--surface2:#1f2940;--surface3:#263350;--border:#2a3548;--border2:#3a4a60;--text:#e8ecf0;--text2:#7a8fa6;--text3:#4a5a70;--accent:#e67e22;--accent-dim:#c0660e;--accent-bg:rgba(230,126,34,0.08);--accent-bg2:rgba(230,126,34,0.15);--green:#2ecc71;--green-bg:rgba(46,204,113,0.1);--warn:#f39c12;--warn-bg:rgba(243,156,18,0.1);--err:#e74c3c;--err-bg:rgba(231,76,60,0.1);--blue:#3498db;--blue-bg:rgba(52,152,219,0.1);--radius:4px;--radius2:6px;--transition:150ms ease;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -164,7 +166,12 @@ input[type="file"]{display:none;}
 </style>
 </head>
 <body>
-<div id="app"></div>
+<div id="app">
+  <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:12px;background:#0f1419;color:#7a8fa6;font-family:system-ui,sans-serif;">
+    <div style="font-size:28px;">📐</div>
+    <div style="font-size:13px;letter-spacing:2px;text-transform:uppercase;">Loading QTO Tool...</div>
+  </div>
+</div>
 <script src="vue.js"></script>
 <script src="qto.js"></script>
 <script>
