@@ -42,17 +42,20 @@
   .tool-card.civil3d{--card-accent:#e67e22;}
   .tool-card.eqp{--card-accent:#3498db;}
   .tool-card.survey{--card-accent:#2ecc71;}
+  .tool-card.estimation{--card-accent:#e67e22;}
 
   .card-top{display:flex;justify-content:space-between;align-items:flex-start;}
   .card-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
   .civil3d .card-icon{background:rgba(230,126,34,0.12);}
   .eqp .card-icon{background:rgba(52,152,219,0.12);}
   .survey .card-icon{background:rgba(46,204,113,0.12);}
+  .estimation .card-icon{background:rgba(230,126,34,0.12);}
 
   .card-badge{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:4px 10px;border-radius:4px;border:1px solid;}
   .civil3d .card-badge{color:var(--accent);border-color:rgba(230,126,34,0.3);background:rgba(230,126,34,0.08);}
   .eqp .card-badge{color:var(--fill);border-color:rgba(52,152,219,0.3);background:rgba(52,152,219,0.08);}
   .survey .card-badge{color:var(--green);border-color:rgba(46,204,113,0.3);background:rgba(46,204,113,0.08);}
+  .estimation .card-badge{color:var(--accent);border-color:rgba(230,126,34,0.3);background:rgba(230,126,34,0.08);}
 
   .card-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.2;}
   .card-desc{font-size:13px;color:var(--muted);line-height:1.7;}
@@ -65,6 +68,7 @@
   .civil3d .launch-btn{background:var(--accent);color:#fff;}
   .eqp .launch-btn{background:var(--fill);color:#fff;}
   .survey .launch-btn{background:var(--green);color:#0f1419;}
+  .estimation .launch-btn{background:var(--accent);color:#fff;}
   .launch-btn:hover{opacity:.85;}
   .launch-arrow{transition:transform .2s;}
   .tool-card:hover .launch-arrow{transform:translateX(3px);}
@@ -175,6 +179,21 @@
       <div class="card-footer">
         <div class="card-status"><div class="status-dot"></div>Active</div>
         <a href="c3d_offset_tool" class="launch-btn">Launch <span class="launch-arrow">→</span></a>
+      </div>
+    </div>
+
+    <div class="tool-card estimation" style="--card-accent:#e67e22;">
+      <div class="card-top">
+        <div class="card-icon" style="background:rgba(230,126,34,0.12);">📐</div>
+        <div class="card-badge" style="color:#e67e22;border-color:rgba(230,126,34,0.3);background:rgba(230,126,34,0.08);">Estimation</div>
+      </div>
+      <div>
+        <div class="card-title">QTO Backup Computation Tool</div>
+        <div class="card-desc">Structured quantity takeoff backup with module-based computation, tag aggregation, schedule generation, and formal PDF export for POW documentation.</div>
+      </div>
+      <div class="card-footer">
+        <div class="card-status"><div class="status-dot"></div>Active</div>
+        <a href="qto_backup" class="launch-btn" style="background:#e67e22;color:#fff;">Launch <span class="launch-arrow">→</span></a>
       </div>
     </div>
 
