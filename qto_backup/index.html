@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QTO Backup Computation — FA Work Tools</title>
+  <link rel="stylesheet" href="css/main.css">
+
+  <!-- Vue 3 (CDN — swap to vue.js local file before final deploy) -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
+  <!-- pdfmake (CDN — swap to local pdfmake.min.js + vfs_fonts.js before final deploy) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+</head>
+<body>
+
+<div id="app"></div>
+
+<!-- Load modules in dependency order -->
+<script src="js/db.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/state.js"></script>
+<script src="js/compute.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
